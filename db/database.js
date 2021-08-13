@@ -32,6 +32,11 @@ class Database {
     const encounters = this.db.collection("encounters");
     return encounters.insertOne(encounter).then((res) => res);
   }
+  async getAllUsersExceptEncounterMembers(excludedIds) {
+    const players = this.db.collection("players");
+    let allPlayers = await players.find().project({ _id: 0, discordID: 1 }).toArray();
+    return allPlayers.filter((player) => !excludedIds.includes(player.discordID));
+  }
 }
 
 let db = new Database(uri);

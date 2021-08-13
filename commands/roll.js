@@ -102,9 +102,16 @@ const createCouncilThread = async (interaction, channel, client) => {
   const spell = generateSpell();
   const thread = client.channels.cache.get(newThread.id);
   thread.send(spell);
-  thread.send(
-    `This council has been summoned to make a decision. ${instigator.username} has targeted ${target.username} ${reason}. Tread carefully and think wisely. Summon me once you have come to a consensus!`
-  );
+  if (target)
+    thread.send(
+      `This council has been summoned to make a decision. ${instigator.username} has targeted ${target.username} ${reason}. Tread carefully and think wisely. Summon me once you have come to a consensus!`
+    );
+  if (!target)
+    thread.send(
+      `This council has been summoned to make a decision. ${instigator.username} is attempting ${reason}. Tread carefully and think wisely. Summon me once you have come to a consensus!`
+    );
+  let council = await db.getAllUsersExceptEncounterMembers([instigator.id, target?.id]);
+  // await thread.members.add(council);
   return spell;
 };
 
@@ -118,6 +125,7 @@ const commandCheck = async (interaction, channel, client) => {
     encounterId,
     instigator,
     target,
+    reason,
   });
   await interaction.reply(`Convening the council . . .`);
 };

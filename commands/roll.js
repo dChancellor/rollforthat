@@ -1,3 +1,7 @@
+const Jumble = require("jumble-words");
+const jumble = new Jumble();
+const db = require("../db/database");
+
 const {
   SlashCommandBuilder,
   SlashCommandSubcommandGroupBuilder,
@@ -18,7 +22,7 @@ const addCheckSlashCommand = (check) => {
     .addStringOption((option) =>
       option.setName("reason").setDescription(`The reason for the ${check} check`).setRequired(true)
     )
-    .addUserOption((option) => option.setName("against").setDescription("The user to roll against"));
+    .addUserOption((option) => option.setName("target").setDescription("The user to roll against"));
 };
 
 module.exports = {
@@ -66,8 +70,9 @@ module.exports = {
         .addSubcommand(addDiceSlashCommand(20))
         .addSubcommand(addDiceSlashCommand(100))
     ),
-  async execute(interaction) {
-    if (interaction.options._group === "check") commandCheck(interaction);
+  async execute(interaction, client) {
+    let channel = client.channels.cache.get(interaction.channel.id);
+    if (interaction.options._group === "check") commandCheck(interaction, channel, client);
     if (interaction.options._group === "dice") commandDice(interaction);
   },
 };
@@ -76,10 +81,47 @@ const rollDice = (numberOfSides) => {
   return Math.ceil(Math.random() * numberOfSides);
 };
 
-const commandCheck = async (interaction) => {
-  let rollResult = rollDice(20);
-  await interaction.reply(`${rollResult}`);
+const generateSpell = () => {
+  let random = jumble.generate(3);
+  return random.reduce((str, word) => {
+    return (str += ` ${word.jumble} . .`);
+  }, ". . .");
 };
+
+const createCouncilThread = async (interaction, channel, client) => {
+  const instigator = interaction.user;
+  const target = interaction.options.getUser("target");
+  const reason = interaction.options.getString("reason");
+  const guildIsPremium = interaction.member.guild.premiumSubscriptionCount > 15;
+  let newThread = await channel.threads.create({
+    name: "Council Meeting",
+    autoArchiveDuration: 1440,
+    type: guildIsPremium ? "GUILD_PRIVATE_THREAD" : "GUILD_PUBLIC_THREAD",
+    reason: "For testing",
+  });
+  const spell = generateSpell();
+  const thread = client.channels.cache.get(newThread.id);
+  thread.send(spell);
+  thread.send(
+    `This council has been summoned to make a decision. ${instigator.username} has targeted ${target.username} ${reason}. Tread carefully and think wisely. Summon me once you have come to a consensus!`
+  );
+  return spell;
+};
+
+const commandCheck = async (interaction, channel, client) => {
+  if (interaction.channel.isThread()) return interaction.reply("The council does not approve your foolishness.");
+  const instigator = interaction.user;
+  const target = interaction.options.getUser("target");
+  const reason = interaction.options.getString("reason");
+  let encounterId = await createCouncilThread(interaction, channel, client);
+  await db.createNewEncounter({
+    encounterId,
+    instigator,
+    target,
+  });
+  await interaction.reply(`Convening the council . . .`);
+};
+
 const commandDice = async (interaction) => {
   const numberOfDice = interaction.options.getInteger("count") || 1;
   if (numberOfDice > 5) return interaction.reply("Stop trying to break the system and select fewer than 5 dice");

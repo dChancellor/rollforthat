@@ -4,6 +4,10 @@ const { Routes } = require("discord-api-types/v9");
 const { discordToken } = require("./config.js");
 const fs = require("fs");
 
+const db = require("./db/database");
+db.connect().then(() => {
+  console.log("Connected!");
+});
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 client.commands = new Collection();
 
@@ -37,9 +41,18 @@ client.once("ready", () => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isCommand()) return;
   if (!client.commands.has(interaction.commandName)) return;
-
+  const isThread = interaction.channel.isThread();
   try {
-    await client.commands.get(interaction.commandName).execute(interaction);
+    if (isThread && interaction.commandName === "council") {
+      await client.commands.get(interaction.commandName).execute(interaction, client);
+    } else if (interaction.commandName != "council") {
+      await client.commands.get(interaction.commandName).execute(interaction, client);
+    } else if (!isThread && interaction.commandName === "council") {
+      await interaction.reply({
+        content: "You are not currently in council and therefore have no right to make decisions.",
+        ephemeral: true,
+      });
+    }
   } catch (error) {
     console.error(error);
     return interaction.reply({ content: "There was an error while executing this command!", ephemeral: true });

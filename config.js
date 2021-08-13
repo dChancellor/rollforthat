@@ -1,6 +1,9 @@
 require("dotenv").config();
 
-discordToken = process.env.DISCORD_TOKEN;
-prefix = "/roll";
+const discordToken = process.env.DISCORD_TOKEN;
 
-module.exports = { discordToken };
+const uri = `mongodb://${process.env.MONGO_USERNAME}:${encodeURIComponent(process.env.MONGO_PASSWORD)}@${
+  process.env.MONGO_HOST
+}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin`;
+
+module.exports = { discordToken, uri };

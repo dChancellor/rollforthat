@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-const discordToken = process.env.DISCORD_TOKEN;
+const discordToken = process.env.ROLLFORTHAT_DISCORD_TOKEN;
 
 const uri = `mongodb://${process.env.MONGO_USERNAME}:${encodeURIComponent(process.env.MONGO_PASSWORD)}@${
   process.env.MONGO_HOST

@@ -26,5 +26,5 @@ const awardXP = async (interaction) => {
   let xp = interaction.options.getInteger("xp");
   let reason = interaction.options.getString("reason");
   await db.addXP(target.id, xp, giver, reason);
-  interaction.reply(`You have awarded ${target.username} ${xp} experience!`);
+  interaction.reply(`You have awarded ${target.username} ${xp} experience for ${reason}!`);
 };

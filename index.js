@@ -26,28 +26,28 @@ for (const file of randomEventFiles) {
   client.commands.set(command.data.name, command);
 }
 
-// const rest = new REST({ version: "9" }).setToken(discordToken);
+const rest = new REST({ version: "9" }).setToken(discordToken);
 
-// (async () => {
-//   try {``
-//     console.log("Started refreshing application (/) commands.");
+(async () => {
+  try {``
+    console.log("Started refreshing application (/) commands.");
 
-//     await rest.put(Routes.applicationGuildCommands("875453249547817011", "685350733410992128"), { body: commands });
+    await rest.put(Routes.applicationGuildCommands("875453249547817011", "685350733410992128"), { body: commands });
 
-//     console.log("Successfully reloaded application (/) commands.");
-//   } catch (error) {
-//     console.error(error);
-//   }
-// })();
+    console.log("Successfully reloaded application (/) commands.");
+  } catch (error) {
+    console.error(error);
+  }
+})();
 
 client.once("ready", () => {
   console.log("Ready!");
-  setInterval(async () => {
-    let random = Math.floor(Math.random() * 100);
-    if (random < 1) {
-      await client.commands.get("encounter").execute(client);
-    }
-  }, 600000);
+  // setInterval(async () => {
+  //   let random = Math.floor(Math.random() * 100);
+  //   if (random < 1) {
+  //     await client.commands.get("encounter").execute(client);
+  //   }
+  // }, 600000);
 });
 
 client.on("interactionCreate", async (interaction) => {

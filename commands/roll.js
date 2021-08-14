@@ -61,7 +61,7 @@ module.exports = {
     )
     .addSubcommandGroup(
       new SlashCommandSubcommandGroupBuilder()
-        .setName("dice")
+        .setName("d")
         .setDescription("Rolls a N sided dice")
         .addSubcommand(addDiceSlashCommand(2))
         .addSubcommand(addDiceSlashCommand(4))

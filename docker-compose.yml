@@ -1,0 +1,9 @@
+services:
+  app:
+    image: mashup
+    build: .
+    restart: always
+    ports:
+      - 5012:5012
+    volumes:
+      - ./:/usr/src/app:cached

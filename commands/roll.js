@@ -1,6 +1,7 @@
 const Jumble = require("jumble-words");
 const jumble = new Jumble();
 const db = require("../db/database");
+const { rollDice } = require("./utils/helper");
 
 const {
   SlashCommandBuilder,
@@ -77,15 +78,12 @@ module.exports = {
   },
 };
 
-const rollDice = (numberOfSides) => {
-  return Math.ceil(Math.random() * numberOfSides);
-};
-
 const generateSpell = () => {
   let random = jumble.generate(3);
-  return random.reduce((str, word) => {
+  let spell = random.reduce((str, word) => {
     return (str += ` ${word.jumble} . .`);
   }, ". . .");
+  return (spell += "!");
 };
 
 const createCouncilThread = async (interaction, channel, client) => {
@@ -97,22 +95,27 @@ const createCouncilThread = async (interaction, channel, client) => {
     name: "Council Meeting",
     autoArchiveDuration: 1440,
     type: guildIsPremium ? "GUILD_PRIVATE_THREAD" : "GUILD_PUBLIC_THREAD",
-    reason: "For testing",
+    reason: `${instigator.username} has targeted ${target.username} ${reason}`,
   });
   const spell = generateSpell();
   const thread = client.channels.cache.get(newThread.id);
-  thread.send(spell);
+  let council = await db.getAllUsersExceptEncounterMembers([instigator.id, target?.id]);
+  await Promise.all(
+    council.map(({ discordID }) => {
+      thread.members.add(discordID);
+    })
+  );
+  await thread.send(spell);
   if (target)
-    thread.send(
+    await thread.send(
       `This council has been summoned to make a decision. ${instigator.username} has targeted ${target.username} ${reason}. Tread carefully and think wisely. Summon me once you have come to a consensus!`
     );
   if (!target)
-    thread.send(
-      `This council has been summoned to make a decision. ${instigator.username} is attempting ${reason}. Tread carefully and think wisely. Summon me once you have come to a consensus!`
+    await thread.send(
+      `This council has been summoned to make a decision. ${instigator.username} is attempting ${reason}.  Tread carefully and think wisely. Summon me once you have come to a consensus!`
     );
-  let council = await db.getAllUsersExceptEncounterMembers([instigator.id, target?.id]);
-  // await thread.members.add(council);
-  return spell;
+
+  return newThread.id;
 };
 
 const commandCheck = async (interaction, channel, client) => {
@@ -120,9 +123,12 @@ const commandCheck = async (interaction, channel, client) => {
   const instigator = interaction.user;
   const target = interaction.options.getUser("target");
   const reason = interaction.options.getString("reason");
-  let encounterId = await createCouncilThread(interaction, channel, client);
+  let encounterID = await createCouncilThread(interaction, channel, client);
   await db.createNewEncounter({
-    encounterId,
+    type: "check",
+    checkType: interaction.options.getSubcommand(),
+    originalChannelID: interaction.channel.id,
+    encounterID,
     instigator,
     target,
     reason,

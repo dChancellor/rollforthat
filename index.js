@@ -8,15 +8,21 @@ const db = require("./db/database");
 db.connect().then(() => {
   console.log("Connected!");
 });
-const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
+const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 client.commands = new Collection();
 
 const commands = [];
 const commandFiles = fs.readdirSync("./commands").filter((file) => file.endsWith(".js"));
+const randomEventFiles = fs.readdirSync("./random").filter((file) => file.endsWith(".js"));
 
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
   commands.push(command.data.toJSON());
+  client.commands.set(command.data.name, command);
+}
+
+for (const file of randomEventFiles) {
+  const command = require(`./random/${file}`);
   client.commands.set(command.data.name, command);
 }
 
@@ -36,6 +42,12 @@ for (const file of commandFiles) {
 
 client.once("ready", () => {
   console.log("Ready!");
+  setInterval(async () => {
+    let random = Math.floor(Math.random() * 100);
+    if (random < 1) {
+      await client.commands.get("encounter").execute(client);
+    }
+  }, 600000);
 });
 
 client.on("interactionCreate", async (interaction) => {

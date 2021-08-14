@@ -24,18 +24,34 @@ class Database {
   async status() {
     return this.db.serverConfig.isConnected();
   }
-  async createNewPlayer() {
-    const players = this.db.collection("players");
-    return players.insertOne({ id: 1, name: "Player 1" }).then((res) => res);
-  }
   async createNewEncounter(encounter) {
     const encounters = this.db.collection("encounters");
-    return encounters.insertOne(encounter).then((res) => res);
+    return encounters.insertOne({ ...encounter, date: new Date() }).then((res) => res);
+  }
+  async getEncounter(id) {
+    const encounters = this.db.collection("encounters");
+    return encounters.findOne({ encounterID: id });
+  }
+  async getAllPlayers() {
+    const players = this.db.collection("players");
+    return players.find().project({ _id: 0, discordID: 1 }).toArray();
   }
   async getAllUsersExceptEncounterMembers(excludedIds) {
     const players = this.db.collection("players");
     let allPlayers = await players.find().project({ _id: 0, discordID: 1 }).toArray();
     return allPlayers.filter((player) => !excludedIds.includes(player.discordID));
+  }
+  async addXP(target, xp, giver, reason) {
+    console.log(target);
+    const players = this.db.collection("players");
+    const encounters = this.db.collection("encounters");
+    await players.updateOne({ discordID: target }, { $inc: { xp: xp } });
+    return encounters.insertOne({ type: "xp", target, xp, giver, reason, date: new Date() });
+  }
+  async getUserAbilityScore(player, ability) {
+    const players = this.db.collection("players");
+    const { stats } = await players.findOne({ discordID: player }, { _id: 0, stats: 1 });
+    return stats[ability];
   }
 }
 
